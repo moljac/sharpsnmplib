@@ -26,7 +26,6 @@
  * To change this template use Tools | Options | Coding | Edit Standard Headers.
  */
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 namespace Lextm.SharpSnmpLib
@@ -34,11 +33,9 @@ namespace Lextm.SharpSnmpLib
     /// <summary>
     /// EndOfMibView exception.
     /// </summary>
-    [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "Reviewed. Suppression is OK here.")]
-    [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Mib")]
     public sealed class EndOfMibView : ISnmpData, IEquatable<EndOfMibView>
     {
-        private readonly byte[] _length;
+        private readonly byte[]? _length;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EndOfMibView"/> class.
@@ -75,11 +72,22 @@ namespace Lextm.SharpSnmpLib
         /// <param name="obj">The <see cref="Object"/> to compare with the current <see cref="EndOfMibView"/>. </param>
         /// <returns><value>true</value> if the specified <see cref="Object"/> is equal to the current <see cref="EndOfMibView"/>; otherwise, <value>false</value>.
         /// </returns>
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return Equals(this, obj as EndOfMibView);
         }
-        
+
+        /// <summary>
+        /// Indicates whether the current object is equal to another object of the same type.
+        /// </summary>
+        /// <param name="other">An object to compare with this object.</param>
+        /// <returns><value>true</value> if the current object is equal to the <paramref name="other"/> parameter; otherwise, <value>false</value>.
+        /// </returns>
+        public bool Equals(EndOfMibView? other)
+        {
+            return Equals(this, other);
+        }
+
         /// <summary>
         /// Serves as a hash function for a particular type.
         /// </summary>
@@ -88,18 +96,7 @@ namespace Lextm.SharpSnmpLib
         {
             return 0;
         }
-        
-        /// <summary>
-        /// Indicates whether the current object is equal to another object of the same type.
-        /// </summary>
-        /// <param name="other">An object to compare with this object.</param>
-        /// <returns><value>true</value> if the current object is equal to the <paramref name="other"/> parameter; otherwise, <value>false</value>.
-        /// </returns>
-        public bool Equals(EndOfMibView other)
-        {
-            return Equals(this, other);
-        }
-        
+
         /// <summary>
         /// The equality operator.
         /// </summary>
@@ -107,11 +104,11 @@ namespace Lextm.SharpSnmpLib
         /// <param name="right">Right <see cref="EndOfMibView"/> object</param>
         /// <returns>
         /// Returns <c>true</c> if the values of its operands are equal, <c>false</c> otherwise.</returns>
-        public static bool operator ==(EndOfMibView left, EndOfMibView right)
+        public static bool operator ==(EndOfMibView? left, EndOfMibView? right)
         {
             return Equals(left, right);
         }
-        
+
         /// <summary>
         /// The inequality operator.
         /// </summary>
@@ -119,7 +116,7 @@ namespace Lextm.SharpSnmpLib
         /// <param name="right">Right <see cref="EndOfMibView"/> object</param>
         /// <returns>
         /// Returns <c>true</c> if the values of its operands are not equal, <c>false</c> otherwise.</returns>
-        public static bool operator !=(EndOfMibView left, EndOfMibView right)
+        public static bool operator !=(EndOfMibView? left, EndOfMibView? right)
         {
             return !(left == right); // use operator == and negate result
         }
@@ -127,13 +124,7 @@ namespace Lextm.SharpSnmpLib
         /// <summary>
         /// Type code.
         /// </summary>
-        public SnmpType TypeCode
-        {
-            get
-            {
-                return SnmpType.EndOfMibView;
-            }
-        }
+        public SnmpType TypeCode => SnmpType.EndOfMibView;
 
         /// <summary>
         /// Appends the bytes to <see cref="Stream"/>.
@@ -145,10 +136,10 @@ namespace Lextm.SharpSnmpLib
             {
                 throw new ArgumentNullException(nameof(stream));
             }
-            
-            stream.AppendBytes(TypeCode, _length, new byte[0]);
+
+            stream.AppendBytes(TypeCode, _length, Array.Empty<byte>());
         }
-        
+
         /// <summary>
         /// Returns a <see cref="String"/> that represents this <see cref="Null"/>.
         /// </summary>
@@ -157,7 +148,7 @@ namespace Lextm.SharpSnmpLib
         {
             return "EndOfMibView";
         }
-        
+
         /// <summary>
         /// The comparison.
         /// </summary>
@@ -165,10 +156,10 @@ namespace Lextm.SharpSnmpLib
         /// <param name="right">Right <see cref="EndOfMibView"/> object</param>
         /// <returns>
         /// Returns <c>true</c> if the values of its operands are not equal, <c>false</c> otherwise.</returns>
-        private static bool Equals(EndOfMibView left, EndOfMibView right)
+        private static bool Equals(EndOfMibView? left, EndOfMibView? right)
         {
-            object lo = left;
-            object ro = right;
+            object? lo = left;
+            object? ro = right;
             if (lo == ro)
             {
                 return true;

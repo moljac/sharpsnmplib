@@ -37,40 +37,5 @@ namespace Lextm.SharpSnmpLib
 
             return new PhysicalAddress(raw);
         }
-
-        private static bool? desSupported;
-
-        internal static bool DESSupported
-        {
-            get
-            {
-                if (desSupported != null)
-                {
-                    return desSupported.Value;
-                }
-
-                return (desSupported = RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework")
-                    || RuntimeInformation.FrameworkDescription.StartsWith(".NET 6.")
-                    || RuntimeInformation.FrameworkDescription.StartsWith(".NET 5.")
-                    || RuntimeInformation.FrameworkDescription.StartsWith(".NET Core 3.1.")).Value;
-            }
-        }
-
-        private static bool? aesSupported;
-
-        internal static bool AESSupported
-        {
-            get
-            {
-                if (aesSupported != null)
-                {
-                    return aesSupported.Value;
-                }
-
-                return (aesSupported = RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework")
-                    || RuntimeInformation.FrameworkDescription.StartsWith(".NET 6.")
-                    || RuntimeInformation.FrameworkDescription.StartsWith(".NET 5.")).Value;
-            }
-        }
     }
 }

@@ -34,9 +34,7 @@ namespace Lextm.SharpSnmpLib.Security
         /// Initializes a new instance of the <see cref="UserRegistry"/> class.
         /// </summary>
         /// <param name="users">The users.</param>
-// ReSharper disable ParameterTypeCanBeEnumerable.Local
-        public UserRegistry(User[] users)
-// ReSharper restore ParameterTypeCanBeEnumerable.Local
+        public UserRegistry(User[]? users)
         {
             if (users == null)
             {
@@ -55,14 +53,11 @@ namespace Lextm.SharpSnmpLib.Security
         public UserRegistry() : this(null)
         {
         }
-        
+
         /// <summary>
         /// Returns the user count.
         /// </summary>
-        public int Count
-        {
-            get { return _users.Count; }
-        }
+        public int Count => _users.Count;
 
         /// <summary>
         /// Adds the specified user name.
@@ -78,13 +73,13 @@ namespace Lextm.SharpSnmpLib.Security
         /// Adds the specified user.
         /// </summary>
         /// <param name="user">The user.</param>
-        public UserRegistry Add(User user)
+        public UserRegistry Add(User? user)
         {
             if (user == null)
             {
                 return this;
             }
-            
+
             if (_users.ContainsKey(user.Name))
             {
                 _users.Remove(user.Name);
@@ -99,16 +94,11 @@ namespace Lextm.SharpSnmpLib.Security
         /// </summary>
         /// <param name="userName">Name of the user.</param>
         /// <returns></returns>
-        public IPrivacyProvider Find(OctetString userName)
+        public IPrivacyProvider? Find(OctetString userName)
         {
-            if (userName == null)
-            {
-                throw new ArgumentNullException(nameof(userName));
-            }
-
             if (userName == OctetString.Empty)
             {
-                // IMPORTANT: used in messagefactory.cs to decrypt discovery messages.
+                // IMPORTANT: used in MessageFactory to decrypt discovery messages.
                 return DefaultPrivacyProvider.DefaultPair;
             }
 

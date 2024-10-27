@@ -27,8 +27,8 @@ namespace Lextm.SharpSnmpLib.Security
     /// </summary>
     public sealed class DefaultPrivacyProvider : IPrivacyProvider
     {
-        private static IPrivacyProvider _defaultInstance;
-        
+        private static IPrivacyProvider? _defaultInstance;
+
         /// <summary>
         /// Default privacy provider with default authentication provider.
         /// </summary>
@@ -36,10 +36,10 @@ namespace Lextm.SharpSnmpLib.Security
         {
             get
             {
-                return _defaultInstance ?? (_defaultInstance = new DefaultPrivacyProvider(DefaultAuthenticationProvider.Instance));
+                return _defaultInstance ??= new DefaultPrivacyProvider(DefaultAuthenticationProvider.Instance);
             }
         }
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="DefaultPrivacyProvider"/> class.
         /// </summary>
@@ -54,13 +54,13 @@ namespace Lextm.SharpSnmpLib.Security
         /// <summary>
         /// Corresponding <see cref="IAuthenticationProvider"/>.
         /// </summary>
-        public IAuthenticationProvider AuthenticationProvider { get; private set; }
+        public IAuthenticationProvider AuthenticationProvider { get; }
 
         /// <summary>
         /// Engine IDs.
         /// </summary>
         /// <remarks>This is an optional field, and only used by TRAP v2 authentication.</remarks>
-        public ICollection<OctetString> EngineIds { get; set; }
+        public ICollection<OctetString>? EngineIds { get; set; }
 
         /// <summary>
         /// Decrypts the specified data.
@@ -74,18 +74,18 @@ namespace Lextm.SharpSnmpLib.Security
             {
                 throw new ArgumentNullException(nameof(data));
             }
-            
+
             if (parameters == null)
             {
                 throw new ArgumentNullException(nameof(parameters));
-            }            
-            
+            }
+
             if (data.TypeCode != SnmpType.Sequence)
             {
                 var newException = new DecryptionException("Default decryption failed");
                 throw newException;
             }
-            
+
             return data;
         }
 
@@ -101,28 +101,25 @@ namespace Lextm.SharpSnmpLib.Security
             {
                 throw new ArgumentNullException(nameof(data));
             }
-                        
+
             if (parameters == null)
             {
                 throw new ArgumentNullException(nameof(parameters));
-            }            
-          
+            }
+
             if (data.TypeCode == SnmpType.Sequence || data is ISnmpPdu)
             {
                 return data;
             }
-            
-            throw new ArgumentException("Invaild data type.", nameof(data));
+
+            throw new ArgumentException("Invalid data type.", nameof(data));
         }
 
         /// <summary>
         /// Gets the salt.
         /// </summary>
         /// <value>The salt.</value>
-        public OctetString Salt
-        {
-            get { return OctetString.Empty; }
-        }
+        public OctetString Salt => OctetString.Empty;
 
         /// <summary>
         /// Passwords to key.

@@ -89,33 +89,13 @@ namespace Lextm.SharpSnmpLib.Messaging
         /// <param name="privacy">The privacy provider.</param>
         /// <param name="needAuthentication">if set to <c>true</c>, authentication is needed.</param>
         /// <param name="length">The length bytes.</param>
-        public ResponseMessage(VersionCode version, Header header, SecurityParameters parameters, Scope scope, IPrivacyProvider privacy, bool needAuthentication, byte[] length)
+        public ResponseMessage(VersionCode version, Header header, SecurityParameters parameters, Scope scope, IPrivacyProvider privacy, bool needAuthentication, byte[]? length)
         {
-            if (scope == null)
-            {
-                throw new ArgumentNullException(nameof(scope));
-            }
-
-            if (parameters == null)
-            {
-                throw new ArgumentNullException(nameof(parameters));
-            }
-
-            if (header == null)
-            {
-                throw new ArgumentNullException(nameof(header));
-            }
-
-            if (privacy == null)
-            {
-                throw new ArgumentNullException(nameof(privacy));
-            }
-
             Version = version;
-            Header = header;
-            Parameters = parameters;
-            Scope = scope;
-            Privacy = privacy;
+            Header = header ?? throw new ArgumentNullException(nameof(header));
+            Parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
+            Scope = scope ?? throw new ArgumentNullException(nameof(scope));
+            Privacy = privacy ?? throw new ArgumentNullException(nameof(privacy));
 
             if (needAuthentication)
             {
@@ -128,47 +108,41 @@ namespace Lextm.SharpSnmpLib.Messaging
         /// <summary>
         /// Gets the header.
         /// </summary>
-        public Header Header { get; private set; }
-        
+        public Header Header { get; }
+
         /// <summary>
         /// Gets the privacy provider.
         /// </summary>
         /// <value>The privacy provider.</value>
-        public IPrivacyProvider Privacy { get; private set; }
+        public IPrivacyProvider Privacy { get; }
 
         /// <summary>
         /// Error status.
         /// </summary>
-        public ErrorCode ErrorStatus
-        {
-            get { return Scope.Pdu.ErrorStatus.ToErrorCode(); }
-        }
+        public ErrorCode ErrorStatus => Scope.Pdu.ErrorStatus.ToErrorCode();
 
         /// <summary>
         /// Error index.
         /// </summary>
-        public int ErrorIndex
-        {
-            get { return Scope.Pdu.ErrorIndex.ToInt32(); }
-        }
+        public int ErrorIndex => Scope.Pdu.ErrorIndex.ToInt32();
 
         /// <summary>
         /// Gets the version.
         /// </summary>
         /// <value>The version.</value>
-        public VersionCode Version { get; private set; }
+        public VersionCode Version { get; }
 
         /// <summary>
         /// Gets the parameters.
         /// </summary>
         /// <value>The parameters.</value>
-        public SecurityParameters Parameters { get; private set; }
+        public SecurityParameters Parameters { get; }
 
         /// <summary>
         /// Gets the scope.
         /// </summary>
         /// <value>The scope.</value>
-        public Scope Scope { get; private set; }
+        public Scope Scope { get; }
 
         /// <summary>
         /// Converts to byte format.

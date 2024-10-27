@@ -2,7 +2,6 @@
 using System.IO;
 using Xunit;
 
-#pragma warning disable 1591, 0618
 namespace Lextm.SharpSnmpLib.Unit
 {
     public class ObjectIdentifierTestFixture
@@ -10,6 +9,7 @@ namespace Lextm.SharpSnmpLib.Unit
         [Fact]
         public void TestException()
         {
+            Assert.Throws<ArgumentNullException>(() => new ObjectIdentifier(null, null));
             Assert.Throws<ArgumentNullException>(() => new ObjectIdentifier((uint[])null));
             Assert.Throws<ArgumentException>(() => new ObjectIdentifier(new uint[] {1}));
             Assert.Throws<ArgumentException>(() => new ObjectIdentifier(new uint[] {5, 8}));
@@ -77,6 +77,22 @@ namespace Lextm.SharpSnmpLib.Unit
         }
 
         [Fact]
+        public void TestGreaterThanOrEqual()
+        {
+            Assert.True(new ObjectIdentifier("1.1") >= new ObjectIdentifier("0.0"));
+            Assert.True(new ObjectIdentifier("1.1") >= new ObjectIdentifier("1.1"));
+            Assert.True(new ObjectIdentifier("0.0.0") >= new ObjectIdentifier("0.0"));
+        }
+
+        [Fact]
+        public void TestLessThanOrEqual()
+        {
+            Assert.True(new ObjectIdentifier("0.0") <= new ObjectIdentifier("1.1"));
+            Assert.True(new ObjectIdentifier("1.1") <= new ObjectIdentifier("1.1"));
+            Assert.True(new ObjectIdentifier("0.0") <= new ObjectIdentifier("0.0.0"));
+        }
+
+        [Fact]
         public void TestConversion()
         {
             var o = new ObjectIdentifier("1.3.6.1.2.1.1.1.0");
@@ -113,5 +129,3 @@ namespace Lextm.SharpSnmpLib.Unit
         }
     }
 }
-#pragma warning restore 1591,0618
-

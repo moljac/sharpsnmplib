@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Text;
 
 namespace Lextm.SharpSnmpLib.Security
 {
@@ -22,12 +19,12 @@ namespace Lextm.SharpSnmpLib.Security
         /// combination will produce a different key this class is modeled using
         /// Dictionary of Dictionaries. This class is not thread safe.
         /// </summary>
-        private class EngineIdCache
+        private sealed class EngineIdCache
         {
             /// <summary>
             /// Cache to map engineId to keys
             /// </summary>
-            private Cache<string, byte[]> _engineIdCache;
+            private readonly Cache<string, byte[]> _engineIdCache;
 
             /// <summary>
             /// Default ctor initializes EngineIdCache
@@ -48,10 +45,9 @@ namespace Lextm.SharpSnmpLib.Security
             ///  cachedValue parameter. This parameter is passed uninitialized.
             /// </param>
             /// <returns> True if the cache contains an element with the specified engineId; otherwise, false.</returns>
-            public bool TryGetCachedValue(byte[] engineId, out byte[] cachedValue)
+            public bool TryGetCachedValue(byte[] engineId, out byte[]? cachedValue)
             {
-                bool success = _engineIdCache.TryGetValue(Stringanize(engineId), out cachedValue);
-                return success;
+                return _engineIdCache.TryGetValue(Stringanize(engineId), out cachedValue);
             }
 
             /// <summary>
@@ -66,14 +62,14 @@ namespace Lextm.SharpSnmpLib.Security
         }
         #endregion
 
-        private Cache<string, EngineIdCache> _cryptoCache;
+        private readonly Cache<string, EngineIdCache> _cryptoCache;
 
         /// <summary>
         /// Ctor
         /// </summary>
         public CryptoKeyCache(int capacity)
         {
-            _cryptoCache = new Cache<string, EngineIdCache>(CacheCapacity);
+            _cryptoCache = new Cache<string, EngineIdCache>(capacity == 0 ? CacheCapacity : capacity);
         }
 
         /// <summary>
@@ -84,16 +80,14 @@ namespace Lextm.SharpSnmpLib.Security
         /// <param name="cachedValue">cached value, if no cache exists for specified password/engine id 
         /// combination default value is assigned to cachedValue </param>
         /// <returns>True if value exists in cache for specified password/engine id combination, false otherwise</returns>
-        public bool TryGetCachedValue(byte[] password, byte[] engineId, out byte[] cachedValue)
+        public bool TryGetCachedValue(byte[] password, byte[] engineId, out byte[]? cachedValue)
         {
-            EngineIdCache engineCache;
             string strPassword = Stringanize(password);
-            bool success = false;
             cachedValue = null;
-            success = _cryptoCache.TryGetValue(strPassword, out engineCache);
+            bool success = _cryptoCache.TryGetValue(strPassword, out var engineCache);
             if (success)
             {
-                success = engineCache.TryGetCachedValue(engineId, out cachedValue);
+                success = engineCache!.TryGetCachedValue(engineId, out cachedValue);
             }
 
             return success;
@@ -126,7 +120,7 @@ namespace Lextm.SharpSnmpLib.Security
         /// <returns></returns>
         private static string Stringanize(byte[] bytes)
         {
-            StringBuilder builder = new StringBuilder();
+            StringBuilder builder = new();
             foreach (byte b in bytes)
             {
                 builder.Append(b.ToString());

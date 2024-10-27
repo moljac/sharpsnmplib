@@ -27,11 +27,11 @@ namespace Lextm.SharpSnmpLib
     /// TimeTicks type.
     /// </summary>
     /// <remarks>Represents SNMP TimeTicks type.</remarks>
-    [DebuggerDisplay("{count} ({ToTimeSpan()})")]
+    [DebuggerDisplay("{_count} ({ToTimeSpan()})")]
     public sealed class TimeTicks : ISnmpData, IEquatable<TimeTicks>
     {
         private readonly Counter32 _count;
-        
+
         /// <summary>
         /// Creates a <see cref="TimeTicks"/> instance with a specific count.
         /// </summary>
@@ -41,15 +41,15 @@ namespace Lextm.SharpSnmpLib
         {
             _count = new Counter32(count);
         }
-        
+
         /// <summary>
         /// Creates a <see cref="TimeTicks"/> instance with <see cref="TimeSpan"/>.
         /// </summary>
         /// <param name="span">The time span.</param>        
         public TimeTicks(TimeSpan span) : this((uint)(span.TotalMilliseconds / 10))
-        {            
+        {
         }
-        
+
         /// <summary>
         /// Creates a <see cref="TimeTicks"/> instance with raw bytes.
         /// </summary>
@@ -75,7 +75,7 @@ namespace Lextm.SharpSnmpLib
             {
                 throw new ArgumentNullException(nameof(stream));
             }
-            
+
             _count = new Counter32(length, stream);
         }
 
@@ -99,29 +99,34 @@ namespace Lextm.SharpSnmpLib
             root *= 100000;
             return new TimeSpan(root);
         }
-            
+
         /// <summary>
         /// Type code.
         /// </summary>
-        public SnmpType TypeCode
-        {
-            get
-            {
-                return SnmpType.TimeTicks;
-            }
-        }
-        
+        public SnmpType TypeCode => SnmpType.TimeTicks;
+
         /// <summary>
         /// Determines whether the specified <see cref="Object"/> is equal to the current <see cref="TimeTicks"/>.
         /// </summary>
         /// <param name="obj">The <see cref="Object"/> to compare with the current <see cref="TimeTicks"/>. </param>
         /// <returns><value>true</value> if the specified <see cref="Object"/> is equal to the current <see cref="TimeTicks"/>; otherwise, <value>false</value>.
         /// </returns>
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return Equals(this, obj as TimeTicks);
         }
-        
+
+        /// <summary>
+        /// Indicates whether the current object is equal to another object of the same type.
+        /// </summary>
+        /// <param name="other">An object to compare with this object.</param>
+        /// <returns><value>true</value> if the current object is equal to the <paramref name="other"/> parameter; otherwise, <value>false</value>.
+        /// </returns>
+        public bool Equals(TimeTicks? other)
+        {
+            return Equals(this, other);
+        }
+
         /// <summary>
         /// Serves as a hash function for a particular type.
         /// </summary>
@@ -143,22 +148,12 @@ namespace Lextm.SharpSnmpLib
             {
                 throw new ArgumentNullException(nameof(stream));
             }
-            
+
             stream.AppendBytes(TypeCode, _count.GetLengthBytes(), _count.GetRaw());
         }
 
         #endregion
-        /// <summary>
-        /// Indicates whether the current object is equal to another object of the same type.
-        /// </summary>
-        /// <param name="other">An object to compare with this object.</param>
-        /// <returns><value>true</value> if the current object is equal to the <paramref name="other"/> parameter; otherwise, <value>false</value>.
-        /// </returns>
-        public bool Equals(TimeTicks other)
-        {
-            return Equals(this, other);
-        }
-        
+
         /// <summary>
         /// The equality operator.
         /// </summary>
@@ -166,11 +161,11 @@ namespace Lextm.SharpSnmpLib
         /// <param name="right">Right <see cref="TimeTicks"/> object</param>
         /// <returns>
         /// Returns <c>true</c> if the values of its operands are equal, <c>false</c> otherwise.</returns>
-        public static bool operator ==(TimeTicks left, TimeTicks right)
+        public static bool operator ==(TimeTicks? left, TimeTicks? right)
         {
             return Equals(left, right);
         }
-        
+
         /// <summary>
         /// The inequality operator.
         /// </summary>
@@ -178,11 +173,11 @@ namespace Lextm.SharpSnmpLib
         /// <param name="right">Right <see cref="TimeTicks"/> object</param>
         /// <returns>
         /// Returns <c>true</c> if the values of its operands are not equal, <c>false</c> otherwise.</returns>
-        public static bool operator !=(TimeTicks left, TimeTicks right)
+        public static bool operator !=(TimeTicks? left, TimeTicks? right)
         {
             return !(left == right);
         }
-        
+
         /// <summary>
         /// Returns a <see cref="String"/> that represents this <see cref="TimeTicks"/>.
         /// </summary>
@@ -191,7 +186,7 @@ namespace Lextm.SharpSnmpLib
         {
             return ToTimeSpan().ToString();
         }
-        
+
         /// <summary>
         /// The comparison.
         /// </summary> 
@@ -199,10 +194,10 @@ namespace Lextm.SharpSnmpLib
         /// <param name="right">Right <see cref="TimeTicks"/> object</param>
         /// <returns>
         /// Returns <c>true</c> if the values of its operands are not equal, <c>false</c> otherwise.</returns>
-        private static bool Equals(TimeTicks left, TimeTicks right)
+        private static bool Equals(TimeTicks? left, TimeTicks? right)
         {
-            object lo = left;
-            object ro = right;
+            object? lo = left;
+            object? ro = right;
             if (lo == ro)
             {
                 return true;
@@ -212,8 +207,8 @@ namespace Lextm.SharpSnmpLib
             {
                 return false;
             }
-            
-            return left._count == right._count;
+
+            return left!._count == right!._count;
         }
     }
 }

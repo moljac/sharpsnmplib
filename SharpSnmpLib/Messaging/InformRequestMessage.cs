@@ -56,23 +56,13 @@ namespace Lextm.SharpSnmpLib.Messaging
                 throw new ArgumentNullException(nameof(variables));
             }
 
-            if (enterprise == null)
-            {
-                throw new ArgumentNullException(nameof(enterprise));
-            }
-
-            if (community == null)
-            {
-                throw new ArgumentNullException(nameof(community));
-            }
-
             if (version == VersionCode.V3)
             {
                 throw new ArgumentException("Only v1 and v2c are supported.", nameof(version));
             }
 
             Version = version;
-            Enterprise = enterprise;
+            Enterprise = enterprise ?? throw new ArgumentNullException(nameof(enterprise));
             TimeStamp = time;
             Header = Header.Empty;
             Parameters = SecurityParameters.Create(community);
@@ -120,6 +110,7 @@ namespace Lextm.SharpSnmpLib.Messaging
         /// <param name="maxMessageSize">Size of the max message.</param>
         /// <param name="report">The report.</param>
         [CLSCompliant(false)]
+        [Obsolete("Please use other overloading ones.")]
         public InformRequestMessage(VersionCode version, int messageId, int requestId, OctetString userName, ObjectIdentifier enterprise, uint time, IList<Variable> variables, IPrivacyProvider privacy, int maxMessageSize, ISnmpMessage report)
             : this(version, messageId, requestId, userName, OctetString.Empty, enterprise, time, variables, privacy, maxMessageSize, report)
         { }
@@ -160,24 +151,14 @@ namespace Lextm.SharpSnmpLib.Messaging
                 throw new ArgumentNullException(nameof(contextName));
             }
 
-            if (enterprise == null)
-            {
-                throw new ArgumentNullException(nameof(enterprise));
-            }
-
             if (report == null)
             {
                 throw new ArgumentNullException(nameof(report));
             }
 
-            if (privacy == null)
-            {
-                throw new ArgumentNullException(nameof(privacy));
-            }
-
             Version = version;
-            Privacy = privacy;
-            Enterprise = enterprise;
+            Privacy = privacy ?? throw new ArgumentNullException(nameof(privacy));
+            Enterprise = enterprise ?? throw new ArgumentNullException(nameof(enterprise));
             TimeStamp = time;
 
             Header = new Header(new Integer32(messageId), new Integer32(maxMessageSize), privacy.ToSecurityLevel() | Levels.Reportable);
@@ -197,39 +178,24 @@ namespace Lextm.SharpSnmpLib.Messaging
                 variables);
             var scope = report.Scope;
             var contextEngineId = scope.ContextEngineId == OctetString.Empty ? parameters.EngineId : scope.ContextEngineId;
+            if (contextEngineId == null)
+            {
+                throw new SnmpException("invalid REPORT message");
+            }
+
             Scope = new Scope(contextEngineId, contextName, pdu);
 
             Privacy.ComputeHash(Version, Header, Parameters, Scope);
             _bytes = this.PackMessage(null).ToBytes();
         }
 
-        internal InformRequestMessage(VersionCode version, Header header, SecurityParameters parameters, Scope scope, IPrivacyProvider privacy, byte[] length)
+        internal InformRequestMessage(VersionCode version, Header header, SecurityParameters parameters, Scope scope, IPrivacyProvider privacy, byte[]? length)
         {
-            if (scope == null)
-            {
-                throw new ArgumentNullException(nameof(scope));
-            }
-
-            if (parameters == null)
-            {
-                throw new ArgumentNullException(nameof(parameters));
-            }
-
-            if (header == null)
-            {
-                throw new ArgumentNullException(nameof(header));
-            }
-
-            if (privacy == null)
-            {
-                throw new ArgumentNullException(nameof(privacy));
-            }
-
             Version = version;
-            Header = header;
-            Parameters = parameters;
-            Scope = scope;
-            Privacy = privacy;
+            Header = header ?? throw new ArgumentNullException(nameof(header));
+            Parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
+            Scope = scope ?? throw new ArgumentNullException(nameof(scope));
+            Privacy = privacy ?? throw new ArgumentNullException(nameof(privacy));
             var pdu = (InformRequestPdu)scope.Pdu;
             Enterprise = pdu.Enterprise;
             TimeStamp = pdu.TimeStamp;
@@ -241,30 +207,30 @@ namespace Lextm.SharpSnmpLib.Messaging
         /// Gets the privacy provider.
         /// </summary>
         /// <value>The privacy provider.</value>
-        public IPrivacyProvider Privacy { get; private set; }
+        public IPrivacyProvider Privacy { get; }
 
         /// <summary>
         /// Gets the version.
         /// </summary>
         /// <value>The version.</value>
-        public VersionCode Version { get; private set; }
+        public VersionCode Version { get; }
 
         /// <summary>
         /// Gets the time stamp.
         /// </summary>
         /// <value>The time stamp.</value>
-        [CLSCompliant(false), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "TimeStamp")]
-        public uint TimeStamp { get; private set; }
+        [CLSCompliant(false)]
+        public uint TimeStamp { get; }
 
         /// <summary>
         /// Enterprise.
         /// </summary>
-        public ObjectIdentifier Enterprise { get; private set; }
+        public ObjectIdentifier? Enterprise { get; }
 
         /// <summary>
         /// Gets the header.
         /// </summary>
-        public Header Header { get; private set; }
+        public Header Header { get; }
 
         /// <summary>
         /// Converts to byte format.
@@ -279,13 +245,13 @@ namespace Lextm.SharpSnmpLib.Messaging
         /// Gets the parameters.
         /// </summary>
         /// <value>The parameters.</value>
-        public SecurityParameters Parameters { get; private set; }
+        public SecurityParameters Parameters { get; }
 
         /// <summary>
         /// Gets the scope.
         /// </summary>
         /// <value>The scope.</value>
-        public Scope Scope { get; private set; }
+        public Scope Scope { get; }
 
         /// <summary>
         /// Returns a <see cref="string"/> that represents this <see cref="InformRequestMessage"/>.

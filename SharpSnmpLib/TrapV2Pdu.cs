@@ -27,15 +27,14 @@ namespace Lextm.SharpSnmpLib
     /// <summary>
     /// TRAP v2 PDU.
     /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Pdu")]
     public sealed class TrapV2Pdu : ISnmpPdu
     {
         private readonly uint[] _timeId = new uint[] { 1, 3, 6, 1, 2, 1, 1, 3, 0 };
         private readonly uint[] _enterpriseId = new uint[] { 1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0 };
         private readonly Sequence _varbindSection;
         private readonly TimeTicks _time;
-        private readonly byte[] _length;
-        private byte[] _raw;
+        private readonly byte[]? _length;
+        private byte[]? _raw;
 
         /// <summary>
         /// Creates a <see cref="TrapV2Pdu"/> instance with all content.
@@ -47,20 +46,10 @@ namespace Lextm.SharpSnmpLib
         [CLSCompliant(false)]
         public TrapV2Pdu(int requestId, ObjectIdentifier enterprise, uint time, IList<Variable> variables)
         {
-            if (enterprise == null)
-            {
-                throw new ArgumentNullException(nameof(enterprise));
-            }
-
-            if (variables == null)
-            {
-                throw new ArgumentNullException(nameof(variables));
-            }
-
-            Enterprise = enterprise;
+            Enterprise = enterprise ?? throw new ArgumentNullException(nameof(enterprise));
             RequestId = new Integer32(requestId);
             _time = new TimeTicks(time);
-            Variables = variables;
+            Variables = variables ?? throw new ArgumentNullException(nameof(variables));
             _varbindSection = Variable.Transform(Decorate(variables));
         }
 
@@ -69,8 +58,6 @@ namespace Lextm.SharpSnmpLib
         /// </summary>
         /// <param name="length">The length data.</param>
         /// <param name="stream">The stream.</param>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1804:RemoveUnusedLocals", MessageId = "temp2")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1804:RemoveUnusedLocals", MessageId = "temp1")]
         public TrapV2Pdu(Tuple<int, byte[]> length, Stream stream)
         {
             if (length == null)
@@ -82,12 +69,10 @@ namespace Lextm.SharpSnmpLib
             {
                 throw new ArgumentNullException(nameof(stream));
             }
-            
+
             RequestId = (Integer32)DataFactory.CreateSnmpData(stream); // request
-#pragma warning disable 168
-            var temp1 = (Integer32)DataFactory.CreateSnmpData(stream); // 0
-            var temp2 = (Integer32)DataFactory.CreateSnmpData(stream); // 0
-#pragma warning restore 168
+            DataFactory.CreateSnmpData(stream); // 0
+            DataFactory.CreateSnmpData(stream); // 0
             _varbindSection = (Sequence)DataFactory.CreateSnmpData(stream);
             Variables = Variable.Transform(_varbindSection); // v[0] is timestamp. v[1] oid, v[2] value.
             _time = (TimeTicks)Variables[0].Data;
@@ -102,31 +87,25 @@ namespace Lextm.SharpSnmpLib
         /// <summary>
         /// Variables.
         /// </summary>
-        public IList<Variable> Variables { get; private set; }
+        public IList<Variable> Variables { get; }
 
         /// <summary>
         /// Gets the request ID.
         /// </summary>
         /// <value>The request ID.</value>
-        public Integer32 RequestId { get; private set; }
+        public Integer32 RequestId { get; }
 
         /// <summary>
         /// Gets the error status.
         /// </summary>
         /// <value>The error status.</value>
-        public Integer32 ErrorStatus
-        {
-            get { throw new NotSupportedException(); }
-        }
+        public Integer32 ErrorStatus => new Integer32(0);
 
         /// <summary>
         /// Gets the index of the error.
         /// </summary>
         /// <value>The index of the error.</value>
-        public Integer32 ErrorIndex
-        {
-            get { throw new NotSupportedException(); }
-        }
+        public Integer32 ErrorIndex => new Integer32(0);
 
         #endregion
 
@@ -134,11 +113,8 @@ namespace Lextm.SharpSnmpLib
         /// <summary>
         /// Type code.
         /// </summary>
-        public SnmpType TypeCode
-        {
-            get { return SnmpType.TrapV2Pdu; }
-        }
-        
+        public SnmpType TypeCode => SnmpType.TrapV2Pdu;
+
         /// <summary>
         /// Appends the bytes to <see cref="Stream"/>.
         /// </summary>
@@ -149,12 +125,8 @@ namespace Lextm.SharpSnmpLib
             {
                 throw new ArgumentNullException(nameof(stream));
             }
-            
-            if (_raw == null)
-            {
-                _raw = ByteTool.ParseItems(RequestId, Integer32.Zero, Integer32.Zero, _varbindSection);
-            }
 
+            _raw ??= ByteTool.ParseItems(RequestId, Integer32.Zero, Integer32.Zero, _varbindSection);
             stream.AppendBytes(TypeCode, _length, _raw);
         }
 
@@ -163,17 +135,13 @@ namespace Lextm.SharpSnmpLib
         /// <summary>
         /// Enterprise.
         /// </summary>
-        public ObjectIdentifier Enterprise { get; private set; }
+        public ObjectIdentifier Enterprise { get; }
 
         /// <summary>
         /// Time stamp.
         /// </summary>
         [CLSCompliant(false)]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "TimeStamp")]
-        public uint TimeStamp
-        {
-            get { return _time.ToUInt32(); }
-        }
+        public uint TimeStamp => _time.ToUInt32();
 
         /// <summary>
         /// Returns a <see cref="string"/> that represents this <see cref="TrapV2Pdu"/>.
@@ -184,13 +152,18 @@ namespace Lextm.SharpSnmpLib
             return string.Format(
                 CultureInfo.InvariantCulture,
                 "TRAP v2 PDU: request ID: {3}; enterprise: {0}; time stamp: {1}; variable count: {2}",
-                Enterprise, 
-                _time, 
+                Enterprise,
+                _time,
                 Variables.Count.ToString(CultureInfo.InvariantCulture),
                 RequestId);
         }
 
-        internal IList<Variable> Decorate(IList<Variable> variables)
+        /// <summary>
+        /// Decorates a list of <see cref="Variable"/> objects with time and enterprise ID.
+        /// </summary>
+        /// <param name="variables">The variables.</param>
+        /// <returns>Decorated list.</returns>
+        public IList<Variable> Decorate(IList<Variable> variables)
         {
             var full = new List<Variable>(variables);
             full.Insert(0, new Variable(_timeId, _time));

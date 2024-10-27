@@ -27,12 +27,20 @@ namespace Lextm.SharpSnmpLib.Security
     /// <summary>
     /// Privacy provider for 3DES.
     /// </summary>
-    /// <remarks>Ported from SNMP#NET Privacy3DES class.</remarks>
+    /// <remarks>
+    /// <p>Ported from SNMP#NET Privacy3DES class.</p>
+    /// <p>Originally defined in a draft https://datatracker.ietf.org/doc/html/draft-reeder-snmpv3-usm-3desede-00</p>
+    /// </remarks>
     [Obsolete("3DES is no longer secure. Please use a more secure provider.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "DES", Justification = "definition")]
     public sealed class TripleDESPrivacyProvider : IPrivacyProvider
     {
-        private readonly SaltGenerator _salt = new SaltGenerator();
+#if NET6_0_OR_GREATER
+        /// <summary>
+        /// Flag to force using legacy encryption/decryption code on .NET 6.
+        /// </summary>
+        public static bool UseLegacy { get; set; }
+#endif
+        private readonly SaltGenerator _salt = new();
         private readonly OctetString _phrase;
 
         /// <summary>
@@ -60,13 +68,13 @@ namespace Lextm.SharpSnmpLib.Security
         /// <summary>
         /// Corresponding <see cref="IAuthenticationProvider"/>.
         /// </summary>
-        public IAuthenticationProvider AuthenticationProvider { get; private set; }
+        public IAuthenticationProvider AuthenticationProvider { get; }
 
         /// <summary>
         /// Engine IDs.
         /// </summary>
         /// <remarks>This is an optional field, and only used by TRAP v2 authentication.</remarks>
-        public ICollection<OctetString> EngineIds { get; set; }
+        public ICollection<OctetString>? EngineIds { get; set; }
 
         /// <summary>
         /// Encrypt scoped PDU using DES encryption protocol
@@ -100,37 +108,43 @@ namespace Lextm.SharpSnmpLib.Security
                 throw new ArgumentException($"Encryption key length has to 32 bytes or more. Current: {key.Length}.", nameof(key));
             }
 
-            //privacyParameters = GetSalt(engineBoots);
-            //byte[] privParamHash = authDigest.ComputeHash(privacyParameters, 0, privacyParameters.Length);
-            //privacyParameters = new byte[8];
-            //Buffer.BlockCopy(privParamHash, 0, privacyParameters, 0, 8);
-
             var iv = GetIV(key, privacyParameters);
-
-            // DES uses 8 byte keys but we need 16 to encrypt ScopedPdu. Get first 8 bytes and use them as encryption key
             var outKey = GetKey(key);
-            byte[] encryptedData = null;
-            using (TripleDES des = TripleDES.Create())
+
+            // IMPORTANT: "The data to be encrypted is treated as sequence of octets. Its
+            // length should be an integral multiple of 8 - and if it is not, the
+            // data is padded at the end as necessary. The actual pad value is
+            // irrelevant."
+            if ((unencryptedData.Length % 8) != 0)
             {
-                des.Mode = CipherMode.CBC;
-                des.Padding = PaddingMode.None;
-
-                using (var transform = des.CreateEncryptor(outKey, iv))
-                {
-                    if ((unencryptedData.Length % 8) == 0)
-                    {
-                        encryptedData = transform.TransformFinalBlock(unencryptedData, 0, unencryptedData.Length);
-                    }
-                    else
-                    {
-                        byte[] tmpbuffer = new byte[8 * ((unencryptedData.Length / 8) + 1)];
-                        Buffer.BlockCopy(unencryptedData, 0, tmpbuffer, 0, unencryptedData.Length);
-                        encryptedData = transform.TransformFinalBlock(tmpbuffer, 0, tmpbuffer.Length);
-                    }
-                }
+                byte[] tmpBuffer = new byte[8 * ((unencryptedData.Length / 8) + 1)];
+                Buffer.BlockCopy(unencryptedData, 0, tmpBuffer, 0, unencryptedData.Length);
+                unencryptedData = tmpBuffer;
             }
+#if NET6_0_OR_GREATER
+            return UseLegacy ? LegacyEncrypt(outKey, iv, unencryptedData) : Net6Encrypt(outKey, iv, unencryptedData);
+#else
+            return LegacyEncrypt(outKey, iv, unencryptedData);
+#endif
+        }
 
-            return encryptedData;
+#if NET6_0_OR_GREATER
+        internal static byte[] Net6Encrypt(byte[] key, byte[] iv, byte[] unencryptedData)
+        {
+            using TripleDES des = TripleDES.Create();
+            des.Key = key;
+            return des.EncryptCbc(unencryptedData, iv, PaddingMode.None);
+        }
+#endif
+
+        internal static byte[] LegacyEncrypt(byte[] key, byte[] iv, byte[] unencryptedData)
+        {
+            using TripleDES des = TripleDES.Create();
+            des.Mode = CipherMode.CBC;
+            des.Padding = PaddingMode.None;
+
+            using var transform = des.CreateEncryptor(key, iv);
+            return transform.TransformFinalBlock(unencryptedData, 0, unencryptedData.Length);
         }
 
         /// <summary>
@@ -181,21 +195,33 @@ namespace Lextm.SharpSnmpLib.Security
             }
 
             var iv = GetIV(key, privacyParameters);
-            using (TripleDES des = TripleDES.Create())
-            {
-                des.Mode = CipherMode.CBC;
-                des.Padding = PaddingMode.Zeros;
+            var outKey = GetKey(key);
 
-                // normalize key - generated key is 32 bytes long, we need 24 bytes to encrypt
-                var outKey = new byte[24];
-                Buffer.BlockCopy(key, 0, outKey, 0, outKey.Length);
+#if NET6_0_OR_GREATER
+            return UseLegacy ? LegacyDecrypt(outKey, iv, encryptedData) : Net6Decrypt(outKey, iv, encryptedData);
+#else
+            return LegacyDecrypt(outKey, iv, encryptedData);
+#endif
+        }
 
-                using (var transform = des.CreateDecryptor(outKey, iv))
-                {
-                    var decryptedData = transform.TransformFinalBlock(encryptedData, 0, encryptedData.Length);
-                    return decryptedData;
-                }
-            }
+#if NET6_0_OR_GREATER
+        internal static byte[] Net6Decrypt(byte[] key, byte[] iv, byte[] encryptedData)
+        {
+            using TripleDES des = TripleDES.Create();
+            des.Key = key;
+            return des.DecryptCbc(encryptedData, iv, PaddingMode.Zeros);
+        }
+#endif
+
+        internal static byte[] LegacyDecrypt(byte[] key, byte[] iv, byte[] encryptedData)
+        {
+            using TripleDES des = TripleDES.Create();
+            des.Mode = CipherMode.CBC;
+            des.Padding = PaddingMode.Zeros;
+
+            using var transform = des.CreateDecryptor(key, iv);
+            var decryptedData = transform.TransformFinalBlock(encryptedData, 0, encryptedData.Length);
+            return decryptedData;
         }
 
         /// <summary>
@@ -234,42 +260,36 @@ namespace Lextm.SharpSnmpLib.Security
                 throw new ArgumentException("Invalid privacy key length.", nameof(privacyPassword));
             }
 
+            // Important: "The first 24 octets of the 32-octet secret (private privacy key) are used as a 3DES-EDE key."
             var key = new byte[24];
             Buffer.BlockCopy(privacyPassword, 0, key, 0, key.Length);
+
+            // TODO: verify that K1, K2, K3 are unique.
             return key;
         }
 
         /// <summary>
-        /// Returns the length of privacyParameters USM header field. For DES, field length is 8.
+        /// Returns the length of privacyParameters USM header field. For 3DES, field length is 8.
         /// </summary>
-        public static int PrivacyParametersLength
-        {
-            get { return 8; }
-        }
+        public static int PrivacyParametersLength => 8;
 
         /// <summary>
-        /// Returns minimum encryption/decryption key length. For DES, returned value is 16.
+        /// Returns minimum encryption/decryption key length. For 3DES, returned value is 32.
         /// 
-        /// DES protocol itself requires an 8 byte key. Additional 8 bytes are used for generating the
-        /// encryption IV. For encryption itself, first 8 bytes of the key are used.
+        /// 3DES protocol itself requires an 24 byte key. Additional 8 bytes are used for generating the
+        /// encryption IV. For encryption itself, first 24 bytes of the key are used.
         /// </summary>
-        public static int MinimumKeyLength
-        {
-            get { return MaximumKeyLength; }
-        }
+        public static int MinimumKeyLength => MaximumKeyLength;
 
         /// <summary>
-        /// Return maximum encryption/decryption key length. For DES, returned value is 16.
+        /// Return maximum encryption/decryption key length. For 3DES, returned value is 32.
         /// 
-        /// DES protocol itself requires an 8 byte key. Additional 8 bytes are used for generating the
-        /// encryption IV. For encryption itself, first 8 bytes of the key are used.
+        /// 3DES protocol itself requires an 24 byte key. Additional 8 bytes are used for generating the
+        /// encryption IV. For encryption itself, first 24 bytes of the key are used.
         /// </summary>
-        public static int MaximumKeyLength
-        {
-            get { return 32; }
-        }
+        public static int MaximumKeyLength => 32;
 
-#region IPrivacyProvider Members
+        #region IPrivacyProvider Members
 
         /// <summary>
         /// Decrypts the specified data.
@@ -295,6 +315,11 @@ namespace Lextm.SharpSnmpLib.Security
                 throw new ArgumentException($"Cannot decrypt the scope data: {code}.", nameof(data));
             }
 
+            if (parameters.EngineId == null)
+            {
+                throw new ArgumentException("Invalid security parameters", nameof(parameters));
+            }
+
             var octets = (OctetString)data;
             var bytes = octets.GetRaw();
             var pkey = PasswordToKey(_phrase.GetRaw(), parameters.EngineId.GetRaw());
@@ -302,7 +327,7 @@ namespace Lextm.SharpSnmpLib.Security
             try
             {
                 // decode encrypted packet
-                var decrypted = Decrypt(bytes, pkey, parameters.PrivacyParameters.GetRaw());            
+                var decrypted = Decrypt(bytes, pkey, parameters.PrivacyParameters!.GetRaw());
                 var result = DataFactory.CreateSnmpData(decrypted);
                 if (result.TypeCode != SnmpType.Sequence)
                 {
@@ -339,9 +364,14 @@ namespace Lextm.SharpSnmpLib.Security
                 throw new ArgumentNullException(nameof(parameters));
             }
 
-            if (data.TypeCode != SnmpType.Sequence && !(data is ISnmpPdu))
+            if (data.TypeCode != SnmpType.Sequence && data is not ISnmpPdu)
             {
                 throw new ArgumentException("Invalid data type.", nameof(data));
+            }
+
+            if (parameters.EngineId == null)
+            {
+                throw new ArgumentException("Invalid security parameters", nameof(parameters));
             }
 
             var pkey = PasswordToKey(_phrase.GetRaw(), parameters.EngineId.GetRaw());
@@ -359,7 +389,7 @@ namespace Lextm.SharpSnmpLib.Security
                 bytes = stream.ToArray();
             }
 
-            var encrypted = Encrypt(bytes, pkey, parameters.PrivacyParameters.GetRaw());
+            var encrypted = Encrypt(bytes, pkey, parameters.PrivacyParameters!.GetRaw());
             return new OctetString(encrypted);
         }
 
@@ -367,10 +397,7 @@ namespace Lextm.SharpSnmpLib.Security
         /// Gets the salt.
         /// </summary>
         /// <value>The salt.</value>
-        public OctetString Salt
-        {
-            get { return new OctetString(_salt.GetSaltBytes()); }
-        }
+        public OctetString Salt => new(_salt.GetSaltBytes());
 
         /// <summary>
         /// Passwords to key.
@@ -383,13 +410,13 @@ namespace Lextm.SharpSnmpLib.Security
             byte[] encryptionKey = AuthenticationProvider.PasswordToKey(secret, engineId);
             if (encryptionKey.Length < MinimumKeyLength)
             {
-                encryptionKey = ExtendShortKey(encryptionKey, secret, engineId, AuthenticationProvider);
+                encryptionKey = ExtendShortKey(encryptionKey, engineId, AuthenticationProvider);
             }
 
             return encryptionKey;
         }
 
-        private byte[] ExtendShortKey(byte[] shortKey, byte[] password, byte[] engineID, IAuthenticationProvider authProtocol)
+        internal static byte[] ExtendShortKey(byte[] shortKey, byte[] engineID, IAuthenticationProvider authProtocol)
         {
             int length = shortKey.Length;
             byte[] extendedKey = new byte[MinimumKeyLength];

@@ -7,6 +7,7 @@
  * To change this template use Tools | Options | Coding | Edit Standard Headers.
  */
 
+#pragma warning disable CS0618 // Type or member is obsolete
 namespace Lextm.SharpSnmpLib.Unit.Security
 {
     using System;
@@ -40,15 +41,11 @@ namespace Lextm.SharpSnmpLib.Unit.Security
         [Fact]
         public void TestIsSupported()
         {
-            #if NET6_0
+#if NET6_0_OR_GREATER
+            Assert.True(DESPrivacyProvider.IsSupported);
+#elif NET471
                 Assert.True(DESPrivacyProvider.IsSupported);
-            #elif NET5_0
-                Assert.True(DESPrivacyProvider.IsSupported);
-            #elif NETCOREAPP3_1
-                Assert.True(DESPrivacyProvider.IsSupported);
-            #elif NET471
-                Assert.True(DESPrivacyProvider.IsSupported);
-            #endif
+#endif
         }
 
         [Fact]
@@ -145,5 +142,50 @@ namespace Lextm.SharpSnmpLib.Unit.Security
             Assert.Equal(SnmpType.OctetString, data.TypeCode);
             Assert.Equal(ByteTool.Convert(expected), ByteTool.Convert(data.ToBytes()));
         }
+
+#if NET6_0_OR_GREATER
+        [Theory]
+        [MemberData(nameof(Data))]
+        public void CompatibilityTest(int length)
+        {
+            var generator = new Random();
+            var data = new byte[length];
+            generator.NextBytes(data);
+            var iv = new byte[8];
+            generator.NextBytes(iv);
+            var key = new byte[8];
+            generator.NextBytes(key);
+
+            {
+                var encrypted = DESPrivacyProvider.LegacyEncrypt(key, iv, data);
+                var decrypted = DESPrivacyProvider.Net6Decrypt(key, iv, encrypted);
+                Assert.Equal(data, decrypted);
+            }
+
+            {
+                var encrypted = DESPrivacyProvider.Net6Encrypt(key, iv, data);
+                var decrypted = DESPrivacyProvider.LegacyDecrypt(key, iv, encrypted);
+                Assert.Equal(data, decrypted);
+            }
+
+            {
+                var encrypted1 = DESPrivacyProvider.LegacyEncrypt(key, iv, data);
+                var encrypted2 = DESPrivacyProvider.Net6Encrypt(key, iv, data);
+                Assert.Equal(encrypted1, encrypted2);
+            }
+        }
+
+        public static IEnumerable<object[]> Data
+        {
+            get
+            {
+                for (int start = 1; start <= 256; start++)
+                {
+                    yield return new object[] { start * 8 };
+                }
+            }
+        }
+#endif
     }
 }
+#pragma warning restore CS0618 // Type or member is obsolete

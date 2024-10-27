@@ -52,14 +52,18 @@ namespace Lextm.SharpSnmpLib
             {
                 throw new ArgumentNullException(nameof(description));
             }
-            
+
             var result = new List<byte>();
-            var content = description.Trim().Split(new[] { ' ' });
+            var content = description.Trim().Split(' ');
             foreach (var part in content)
             {
                 if (byte.TryParse(part, out byte temp))
                 {
                     result.Add(temp);
+                }
+                else
+                {
+                    throw new ArgumentException("Invalid decimal string.", nameof(description));
                 }
             }
 
@@ -87,7 +91,7 @@ namespace Lextm.SharpSnmpLib
                 {
                     throw new ArgumentException("Illegal character found.", nameof(description));
                 }
-                
+
                 buffer.Append(c);
                 if (buffer.Length != 2)
                 {
@@ -97,15 +101,19 @@ namespace Lextm.SharpSnmpLib
                 {
                     result.Add(temp);
                 }
+                else
+                {
+                    throw new ArgumentException("Invalid byte string.", nameof(description));
+                }
 
                 buffer.Length = 0;
             }
-            
+
             if (buffer.Length != 0)
             {
                 throw new ArgumentException("Not a complete byte string.", nameof(description));
             }
-            
+
             return result.ToArray();
         }
 
@@ -132,20 +140,18 @@ namespace Lextm.SharpSnmpLib
                 throw new ArgumentNullException(nameof(items));
             }
 
-            using (var result = new MemoryStream())
+            using var result = new MemoryStream();
+            foreach (var item in items)
             {
-                foreach (var item in items)
+                if (item == null)
                 {
-                    if (item == null)
-                    {
-                        throw new ArgumentException("Item in the collection cannot be null.", nameof(items));
-                    }
-
-                    item.AppendBytesTo(result);
+                    throw new ArgumentException("Item in the collection cannot be null.", nameof(items));
                 }
-                
-                return result.ToArray();
+
+                item.AppendBytesTo(result);
             }
+
+            return result.ToArray();
         }
 
         internal static byte[] ParseItems(IEnumerable<ISnmpData> items)
@@ -155,15 +161,13 @@ namespace Lextm.SharpSnmpLib
                 throw new ArgumentNullException(nameof(items));
             }
 
-            using (var result = new MemoryStream())
+            using var result = new MemoryStream();
+            foreach (var item in items)
             {
-                foreach (var item in items)
-                {
-                    item.AppendBytesTo(result);
-                }
-                
-                return result.ToArray();
+                item.AppendBytesTo(result);
             }
+
+            return result.ToArray();
         }
 
         internal static byte[] GetRawBytes(IEnumerable<byte> orig, bool negative)
@@ -218,7 +222,7 @@ namespace Lextm.SharpSnmpLib
         /// <param name="parameters">Security parameters.</param>
         /// <param name="data">Scope data.</param>
         /// <returns>The <see cref="Sequence" /> object that represents the message body.</returns>
-        public static Sequence PackMessage(byte[] length, VersionCode version, ISegment header, ISegment parameters, ISnmpData data)
+        public static Sequence PackMessage(byte[]? length, VersionCode version, ISegment header, ISegment parameters, ISnmpData data)
         {
             if (header == null)
             {
@@ -235,7 +239,7 @@ namespace Lextm.SharpSnmpLib
                 throw new ArgumentNullException(nameof(data));
             }
 
-            var items = new[] 
+            var items = new[]
             {
                 new Integer32((int)version),
                 header.GetData(version),
@@ -259,7 +263,7 @@ namespace Lextm.SharpSnmpLib
                 stream.WriteByte((byte)length);
                 return stream.ToArray();
             }
-            
+
             var c = new byte[16];
             var j = 0;
             while (length > 0)
@@ -267,7 +271,7 @@ namespace Lextm.SharpSnmpLib
                 c[j++] = (byte)(length & 0xff);
                 length >>= 8;
             }
-            
+
             stream.WriteByte((byte)(0x80 | j));
             while (j > 0)
             {

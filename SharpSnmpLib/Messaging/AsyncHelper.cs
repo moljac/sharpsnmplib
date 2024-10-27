@@ -6,15 +6,15 @@ namespace Lextm.SharpSnmpLib.Messaging
 {
     internal static class AsyncHelper
     {
-        private static readonly TaskFactory s_myTaskFactory = new
-          TaskFactory(CancellationToken.None,
-                      TaskCreationOptions.None,
-                      TaskContinuationOptions.None,
-                      TaskScheduler.Default);
+        private static readonly TaskFactory MyTaskFactory = new
+            (CancellationToken.None,
+             TaskCreationOptions.None,
+             TaskContinuationOptions.None,
+             TaskScheduler.Default);
 
         public static TResult RunSync<TResult>(Func<Task<TResult>> func)
         {
-            return s_myTaskFactory
+            return MyTaskFactory
               .StartNew(func)
               .Unwrap()
               .GetAwaiter()
@@ -23,7 +23,7 @@ namespace Lextm.SharpSnmpLib.Messaging
 
         public static void RunSync(Func<Task> func)
         {
-            s_myTaskFactory
+            MyTaskFactory
               .StartNew(func)
               .Unwrap()
               .GetAwaiter()

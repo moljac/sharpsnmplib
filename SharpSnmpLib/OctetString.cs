@@ -39,7 +39,7 @@ using System.Text;
 // Universal, and provide the Creator and Creators methods for your class
 // You will see an example of how to do this in the Snmplib
 // CONTEXT AND PRIVATE TYPES
-// Ad hoc coding can be used for these, as an alterative to derive index class as above.
+// Ad hoc coding can be used for these, as an alternative to derive index class as above.
 namespace Lextm.SharpSnmpLib
 {
     /// <summary>
@@ -48,12 +48,9 @@ namespace Lextm.SharpSnmpLib
     public sealed class OctetString // This namespace has its own concept of string
         : ISnmpData, IEquatable<OctetString>
     {
-        private static readonly OctetString EmptyString = new OctetString(string.Empty, Encoding.GetEncoding("ASCII")); 
-        
         // IMPORTANT: use GetEncoding because of CF.
-        private static Encoding _defaultEncoding = Encoding.GetEncoding("ASCII");
         private readonly byte[] _raw;
-        private byte[] _length;
+        private byte[]? _length;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="OctetString"/> class.
@@ -73,11 +70,17 @@ namespace Lextm.SharpSnmpLib
             }
 
             _raw = new byte[length.Item1];
-            stream.Read(_raw, 0, length.Item1);
+            var returned = stream.Read(_raw, 0, length.Item1);
+            if (returned < length.Item1)
+            {
+                throw new ArgumentException($"Read only {returned} bytes while expected {length.Item1}",
+                    nameof(length));
+            }
+
             Encoding = DefaultEncoding;
             _length = length.Item2;
         }
-        
+
         /// <summary>
         /// Creates an <see cref="OctetString"/> from raw bytes.
         /// </summary>
@@ -88,12 +91,12 @@ namespace Lextm.SharpSnmpLib
             {
                 throw new ArgumentNullException(nameof(raw));
             }
-            
+
             _raw = new byte[raw.Length];
             Buffer.BlockCopy(raw, 0, _raw, 0, raw.Length);
             Encoding = DefaultEncoding;
         }
-        
+
         /// <summary>
         /// Creates an <see cref="OctetString"/> with a specific <see cref="String"/>. This string is treated in specific <see cref="Encoding"/>.
         /// </summary>
@@ -104,7 +107,7 @@ namespace Lextm.SharpSnmpLib
             Encoding = encoding;
             _raw = Encoding.GetBytes(content);
         }
-        
+
         /// <summary>
         /// Creates an <see cref="OctetString"/> with a specific <see cref="String"/>. This string is treated as UTF-16.
         /// </summary>
@@ -113,19 +116,19 @@ namespace Lextm.SharpSnmpLib
             : this(content, DefaultEncoding)
         {
         }
-        
+
         /// <summary>
         /// Creates an <see cref="OctetString"/> with a specific <see cref="Levels"/>.
         /// </summary>
         /// <param name="level"></param>
         public OctetString(Levels level) : this(new[] { (byte)level })
-        {            
+        {
         }
 
         /// <summary>
         /// Encoding of this <see cref="OctetString"/>
         /// </summary>
-        public Encoding Encoding { get; private set; }
+        public Encoding Encoding { get; }
 
         /// <summary>
         /// Gets raw bytes.
@@ -135,22 +138,19 @@ namespace Lextm.SharpSnmpLib
         {
             return _raw;
         }
-        
+
         /// <summary>
         /// Gets the empty string.
         /// </summary>
         /// <value>The empty.</value>
-        public static OctetString Empty
-        {
-            get { return EmptyString; }
-        }
-               
+        public static OctetString Empty { get; } = new(string.Empty, Encoding.GetEncoding("ASCII"));
+
         /// <summary>
         /// Returns a <see cref="Levels"/> that represents this <see cref="OctetString"/>.
         /// </summary>
         /// <returns></returns>
         public Levels ToLevels()
-        {          
+        {
             var bytes = GetRaw();
             if (bytes.Length > 1)
             {
@@ -159,7 +159,7 @@ namespace Lextm.SharpSnmpLib
 
             return (Levels)(bytes[0] & 7);
         }
-        
+
         /// <summary>
         /// Returns a <see cref="String"/> in a hex form that represents this <see cref="OctetString"/>.
         /// </summary>
@@ -171,10 +171,10 @@ namespace Lextm.SharpSnmpLib
             {
                 result.Append(b.ToString("X2", CultureInfo.InvariantCulture));
             }
-            
+
             return result.ToString();
         }
-        
+
         /// <summary>
         /// Returns a <see cref="String"/> in a specific <see cref="Encoding"/> that represents this <see cref="OctetString"/>.
         /// </summary>
@@ -198,17 +198,11 @@ namespace Lextm.SharpSnmpLib
         {
             return ToString(Encoding);
         }
-        
+
         /// <summary>
         /// Type code.
         /// </summary>
-        public SnmpType TypeCode
-        {
-            get
-            {
-                return SnmpType.OctetString;
-            }
-        }
+        public SnmpType TypeCode => SnmpType.OctetString;
 
         /// <summary>
         /// Appends the bytes to <see cref="Stream"/>.
@@ -230,22 +224,22 @@ namespace Lextm.SharpSnmpLib
         /// <param name="other">An object to compare with this object.</param>
         /// <returns><value>true</value> if the current object is equal to the <paramref name="other"/> parameter; otherwise, <value>false</value>.
         /// </returns>
-        public bool Equals(OctetString other)
+        public bool Equals(OctetString? other)
         {
             return Equals(this, other);
         }
-        
+
         /// <summary>
         /// Determines whether the specified <see cref="Object"/> is equal to the current <see cref="OctetString"/>.
         /// </summary>
         /// <param name="obj">The <see cref="Object"/> to compare with the current <see cref="OctetString"/>. </param>
         /// <returns><value>true</value> if the specified <see cref="Object"/> is equal to the current <see cref="OctetString"/>; otherwise, <value>false</value>.
         /// </returns>
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return Equals(this, obj as OctetString);
         }
-        
+
         /// <summary>
         /// Serves as a hash function for a particular type.
         /// </summary>
@@ -254,7 +248,7 @@ namespace Lextm.SharpSnmpLib
         {
             return ToString(Encoding.Unicode).GetHashCode();
         }
-        
+
         /// <summary>
         /// The equality operator.
         /// </summary>
@@ -262,11 +256,11 @@ namespace Lextm.SharpSnmpLib
         /// <param name="right">Right <see cref="OctetString"/> object</param>
         /// <returns>
         /// Returns <c>true</c> if the values of its operands are equal, <c>false</c> otherwise.</returns>
-        public static bool operator ==(OctetString left, OctetString right)
+        public static bool operator ==(OctetString? left, OctetString? right)
         {
             return Equals(left, right);
         }
-        
+
         /// <summary>
         /// The inequality operator.
         /// </summary>
@@ -274,7 +268,7 @@ namespace Lextm.SharpSnmpLib
         /// <param name="right">Right <see cref="OctetString"/> object</param>
         /// <returns>
         /// Returns <c>true</c> if the values of its operands are not equal, <c>false</c> otherwise.</returns>
-        public static bool operator !=(OctetString left, OctetString right)
+        public static bool operator !=(OctetString? left, OctetString? right)
         {
             return !(left == right);
         }
@@ -296,12 +290,8 @@ namespace Lextm.SharpSnmpLib
         /// <summary>
         /// Default encoding of <see cref="OctetString"/> type.
         /// </summary>
-        public static Encoding DefaultEncoding
-        {
-            get { return _defaultEncoding; }
-            set { _defaultEncoding = value; }
-        }
-        
+        public static Encoding DefaultEncoding { get; set; } = Encoding.GetEncoding("ASCII");
+
         /// <summary>
         /// The comparison.
         /// </summary>
@@ -309,10 +299,10 @@ namespace Lextm.SharpSnmpLib
         /// <param name="right">Right <see cref="OctetString"/> object</param>
         /// <returns>
         /// Returns <c>true</c> if the values of its operands are not equal, <c>false</c> otherwise.</returns>
-        private static bool Equals(OctetString left, OctetString right)
+        private static bool Equals(OctetString? left, OctetString? right)
         {
-            object lo = left;
-            object ro = right;
+            object? lo = left;
+            object? ro = right;
             if (lo == ro)
             {
                 return true;
@@ -323,15 +313,15 @@ namespace Lextm.SharpSnmpLib
                 return false;
             }
 
-            return left._raw.SequenceEqual(right._raw); 
+            return left!._raw.SequenceEqual(right!._raw);
         }
 
-        internal byte[] GetLengthBytes()
+        internal byte[]? GetLengthBytes()
         {
             return _length;
         }
 
-        internal void SetLengthBytes(byte[] bytes)
+        internal void SetLengthBytes(byte[]? bytes)
         {
             _length = bytes;
         }
@@ -341,7 +331,7 @@ namespace Lextm.SharpSnmpLib
         /// </summary>
         /// <param name="value">A <see cref="OctetString" /> reference.</param>
         /// <returns><c>true</c> if the <paramref name="value"/> parameter is a null reference (<c>Nothing</c> in Visual Basic) or an empty string (""); otherwise, <c>false</c>.</returns>
-        public static bool IsNullOrEmpty(OctetString value)
+        public static bool IsNullOrEmpty(OctetString? value)
         {
             if (value == null)
             {
@@ -356,6 +346,6 @@ namespace Lextm.SharpSnmpLib
             return false;
         }
     }
-    
+
     // all references here are to ITU-X.690-12/97
 }

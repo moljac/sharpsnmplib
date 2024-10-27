@@ -36,14 +36,13 @@ namespace Lextm.SharpSnmpLib
     /// Trap v1 PDU.
     /// </summary>
     /// <remarks>represents the PDU of trap v1 message.</remarks>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Pdu")]
     public sealed class TrapV1Pdu : ISnmpPdu
     {
-        private byte[] _raw;
+        private byte[]? _raw;
         private readonly Integer32 _generic;
         private readonly Integer32 _specific;
         private readonly Sequence _varbindSection;
-        private readonly byte[] _length;
+        private readonly byte[]? _length;
 
         /// <summary>
         /// Creates a <see cref="TrapV1Pdu"/> instance with PDU elements.
@@ -56,10 +55,10 @@ namespace Lextm.SharpSnmpLib
         /// <param name="variables">Variable binds</param>
         [CLSCompliant(false)]
         public TrapV1Pdu(uint[] enterprise, IP agent, Integer32 generic, Integer32 specific, TimeTicks timestamp, IList<Variable> variables)
-            : this(new ObjectIdentifier(enterprise), agent, generic, specific, timestamp, variables) 
+            : this(new ObjectIdentifier(enterprise), agent, generic, specific, timestamp, variables)
         {
         }
-        
+
         /// <summary>
         /// Creates a <see cref="TrapV1Pdu"/> instance with PDU elements.
         /// </summary>
@@ -71,41 +70,16 @@ namespace Lextm.SharpSnmpLib
         /// <param name="variables">Variable binds</param>
         public TrapV1Pdu(ObjectIdentifier enterprise, IP agent, Integer32 generic, Integer32 specific, TimeTicks timestamp, IList<Variable> variables)
         {
-            if (enterprise == null)
-            {
-                throw new ArgumentNullException(nameof(enterprise));
-            }
-
-            if (agent == null)
-            {
-                throw new ArgumentNullException(nameof(agent));
-            }
-
-            if (generic == null)
-            {
-                throw new ArgumentNullException(nameof(generic));
-            }
-
-            if (specific == null)
-            {
-                throw new ArgumentNullException(nameof(specific));
-            }
-
-            if (timestamp == null)
-            {
-                throw new ArgumentNullException(nameof(timestamp));
-            }
-
             if (variables == null)
             {
                 throw new ArgumentNullException(nameof(variables));
             }
 
-            Enterprise = enterprise;
-            AgentAddress = agent;
-            _generic = generic;
-            _specific = specific;
-            TimeStamp = timestamp;
+            Enterprise = enterprise ?? throw new ArgumentNullException(nameof(enterprise));
+            AgentAddress = agent ?? throw new ArgumentNullException(nameof(agent));
+            _generic = generic ?? throw new ArgumentNullException(nameof(generic));
+            _specific = specific ?? throw new ArgumentNullException(nameof(specific));
+            TimeStamp = timestamp ?? throw new ArgumentNullException(nameof(timestamp));
             _varbindSection = Variable.Transform(variables);
             Variables = variables;
         }
@@ -122,11 +96,11 @@ namespace Lextm.SharpSnmpLib
                 throw new ArgumentNullException(nameof(length));
             }
 
-            if (stream == null) 
+            if (stream == null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
-            
+
             Enterprise = (ObjectIdentifier)DataFactory.CreateSnmpData(stream);
             AgentAddress = (IP)DataFactory.CreateSnmpData(stream);
             _generic = (Integer32)DataFactory.CreateSnmpData(stream);
@@ -141,39 +115,24 @@ namespace Lextm.SharpSnmpLib
         /// Gets the request ID.
         /// </summary>
         /// <value>The request ID.</value>
-        public Integer32 RequestId
-        {
-            get { throw new NotSupportedException(); }
-        }
+        public Integer32 RequestId => throw new NotSupportedException();
 
         /// <summary>
         /// Gets the index of the error.
         /// </summary>
         /// <value>The index of the error.</value>
-        public Integer32 ErrorIndex
-        {
-            get { throw new NotSupportedException(); }
-        }
+        public Integer32 ErrorIndex => throw new NotSupportedException();
 
         /// <summary>
         /// Gets the error status.
         /// </summary>
         /// <value>The error status.</value>
-        public Integer32 ErrorStatus
-        {
-            get { throw new NotSupportedException(); }
-        }
+        public Integer32 ErrorStatus => throw new NotSupportedException();
 
         /// <summary>
         /// Type code.
         /// </summary>
-        public SnmpType TypeCode 
-        {
-            get 
-            {
-                return SnmpType.TrapV1Pdu;
-            }
-        }
+        public SnmpType TypeCode => SnmpType.TrapV1Pdu;
 
         /// <summary>
         /// Appends the bytes to <see cref="Stream"/>.
@@ -186,50 +145,39 @@ namespace Lextm.SharpSnmpLib
                 throw new ArgumentNullException(nameof(stream));
             }
 
-            if (_raw == null)
-            {
-                _raw = ByteTool.ParseItems(Enterprise, AgentAddress, _generic, _specific, TimeStamp, _varbindSection);
-            }
-
+            _raw ??= ByteTool.ParseItems(Enterprise, AgentAddress, _generic, _specific, TimeStamp, _varbindSection);
             stream.AppendBytes(TypeCode, _length, _raw);
         }
 
         /// <summary>
         /// Enterprise.
         /// </summary>
-        public ObjectIdentifier Enterprise { get; private set; }
+        public ObjectIdentifier Enterprise { get; }
 
         /// <summary>
         /// Agent address.
         /// </summary>
-        public IP AgentAddress { get; private set; }
+        public IP AgentAddress { get; }
 
         /// <summary>
         /// Generic trap type.
         /// </summary>
-        public GenericCode Generic
-        {
-            get { return (GenericCode)_generic.ToInt32(); }
-        }
-        
+        public GenericCode Generic => (GenericCode)_generic.ToInt32();
+
         /// <summary>
         /// Specific trap type.
         /// </summary>
-        public int Specific 
-        {
-            get { return _specific.ToInt32(); }
-        }
+        public int Specific => _specific.ToInt32();
 
         /// <summary>
         /// Time stamp.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "TimeStamp")]
-        public TimeTicks TimeStamp { get; private set; }
+        public TimeTicks TimeStamp { get; }
 
         /// <summary>
         /// Variable binds.
         /// </summary>
-        public IList<Variable> Variables { get; private set; }
+        public IList<Variable> Variables { get; }
 
         /// <summary>
         /// Returns a <see cref="string"/> that represents this <see cref="TrapV1Pdu"/>.

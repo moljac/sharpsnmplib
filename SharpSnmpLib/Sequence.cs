@@ -41,9 +41,9 @@ namespace Lextm.SharpSnmpLib
     /// <remarks>Represents SMIv1 SEQUENCE.</remarks>
     public sealed class Sequence : ISnmpData
     {
-        private readonly List<ISnmpData> _list = new List<ISnmpData>();
-        private readonly byte[] _length;
-        private byte[] _buffer;
+        private readonly List<ISnmpData> _list = new();
+        private readonly byte[]? _length;
+        private byte[]? _buffer;
 
         /// <summary>
         /// Gets the enumerator.
@@ -59,7 +59,7 @@ namespace Lextm.SharpSnmpLib
         /// </summary>
         /// <param name="length">The length bytes.</param>
         /// <param name="items">The items.</param>
-        public Sequence(byte[] length, params ISnmpData[] items)
+        public Sequence(byte[]? length, params ISnmpData?[] items)
         {
             if (items == null)
             {
@@ -68,7 +68,7 @@ namespace Lextm.SharpSnmpLib
 
             foreach (var data in items.Where(data => data != null))
             {
-                _list.Add(data);
+                _list.Add(data!);
             }
 
             _length = length;
@@ -124,27 +124,18 @@ namespace Lextm.SharpSnmpLib
         /// <summary>
         /// Item count in this <see cref="Sequence"/>.
         /// </summary>
-        public int Length
-        {
-            get { return _list.Count; }
-        }
+        public int Length => _list.Count;
 
         /// <summary>
         /// Gets the <see cref="Lextm.SharpSnmpLib.ISnmpData"/> at the specified index.
         /// </summary>
         /// <value></value>
-        public ISnmpData this[int index]
-        {
-            get { return _list[index]; }
-        }
-        
+        public ISnmpData this[int index] => _list[index];
+
         /// <summary>
         /// Type code.
         /// </summary>
-        public SnmpType TypeCode
-        {
-            get { return SnmpType.Sequence; }
-        }
+        public SnmpType TypeCode => SnmpType.Sequence;
 
         /// <summary>
         /// Appends the bytes to <see cref="Stream"/>.
@@ -176,7 +167,7 @@ namespace Lextm.SharpSnmpLib
             {
                 result.Append(item).Append("; ");
             }
-            
+
             return result.ToString();
         }
 
@@ -184,7 +175,7 @@ namespace Lextm.SharpSnmpLib
         /// Gets the length bytes.
         /// </summary>
         /// <returns>System.Byte[].</returns>
-        public byte[] GetLengthBytes()
+        public byte[]? GetLengthBytes()
         {
             return _length;
         }

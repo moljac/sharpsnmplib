@@ -35,13 +35,13 @@ namespace Lextm.SharpSnmpLib.Messaging
     /// <summary>
     /// Error exception of #SNMP. Raised when an error message is received.
     /// </summary>
-    [DataContract]
-    public sealed class ErrorException : OperationException
+    [Serializable]
+    public sealed class ErrorException : OperationException, ISerializable
     {
         /// <summary>
         /// Message body.
         /// </summary>
-        public ISnmpMessage Body { get; private set; }
+        public ISnmpMessage? Body { get; private set; }
 
         /// <summary>
         /// Creates a <see cref="ErrorException"/> instance.
@@ -49,7 +49,7 @@ namespace Lextm.SharpSnmpLib.Messaging
         public ErrorException()
         {
         }
-        
+
         /// <summary>
         /// Creates a <see cref="ErrorException"/> instance with a specific <see cref="string"/>.
         /// </summary>
@@ -57,7 +57,7 @@ namespace Lextm.SharpSnmpLib.Messaging
         public ErrorException(string message) : base(message)
         {
         }
-        
+
         /// <summary>
         /// Creates a <see cref="ErrorException"/> instance with a specific <see cref="string"/> and an <see cref="Exception"/>.
         /// </summary>
@@ -69,12 +69,34 @@ namespace Lextm.SharpSnmpLib.Messaging
         }
 
         /// <summary>
+        /// Creates a <see cref="ErrorException"/> instance.
+        /// </summary>
+        /// <param name="info">Info</param>
+        /// <param name="context">Context</param>
+        private ErrorException(SerializationInfo info, StreamingContext context)
+           : base(info, context)
+        {
+            // IMPORTANT: Body is not serialized.
+        }
+
+        /// <inheritdoc/>
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+        }
+
+        /// <summary>
         /// Details on error.
         /// </summary>
         protected override string Details
         {
             get
             {
+                if (Body == null)
+                {
+                    return string.Empty;
+                }
+
                 var pdu = Body.Pdu();
                 var index = pdu.ErrorIndex.ToInt32();
                 return string.Format(
@@ -86,14 +108,14 @@ namespace Lextm.SharpSnmpLib.Messaging
                     index == 0 ? null : pdu.Variables[index - 1].Id);
             }
         }
-         
+
         /// <summary>
         /// Creates a <see cref="ErrorException"/>.
         /// </summary>
         /// <param name="message">Message.</param>
         /// <param name="agent">Agent address.</param>
         /// <param name="body">Error message body.</param>
-            /// <returns></returns>
+        /// <returns></returns>
         public static ErrorException Create(string message, IPAddress agent, ISnmpMessage body)
         {
             var ex = new ErrorException(message) { Agent = agent, Body = body };

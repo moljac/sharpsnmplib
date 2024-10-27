@@ -27,13 +27,12 @@ namespace Lextm.SharpSnmpLib
     /// <summary>
     /// GET request PDU.
     /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Pdu")]
     public sealed class GetRequestPdu : ISnmpPdu
     {
         private readonly Sequence _varbindSection;
-        private readonly byte[] _length;
-        private byte[] _raw;
-      
+        private readonly byte[]? _length;
+        private byte[]? _raw;
+
         /// <summary>
         /// Creates a <see cref="GetRequestPdu"/> with all contents.
         /// </summary>
@@ -41,15 +40,10 @@ namespace Lextm.SharpSnmpLib
         /// <param name="variables">Variables</param>      
         public GetRequestPdu(int requestId, IList<Variable> variables)
         {
-            if (variables == null)
-            {
-                throw new ArgumentNullException(nameof(variables));
-            }
-
             RequestId = new Integer32(requestId);
             ErrorStatus = Integer32.Zero;
             ErrorIndex = Integer32.Zero;
-            Variables = variables;
+            Variables = variables ?? throw new ArgumentNullException(nameof(variables));
             _varbindSection = Variable.Transform(variables);
         }
 
@@ -82,33 +76,30 @@ namespace Lextm.SharpSnmpLib
         /// Gets the request ID.
         /// </summary>
         /// <value>The request ID.</value>
-        public Integer32 RequestId { get; private set; }
+        public Integer32 RequestId { get; }
 
         /// <summary>
         /// Gets the error status.
         /// </summary>
         /// <value>The error status.</value>
-        public Integer32 ErrorStatus { get; private set; }
+        public Integer32 ErrorStatus { get; }
 
         /// <summary>
         /// Gets the index of the error.
         /// </summary>
         /// <value>The index of the error.</value>
-        public Integer32 ErrorIndex { get; private set; }
+        public Integer32 ErrorIndex { get; }
 
         /// <summary>
         /// Variables.
         /// </summary>
-        public IList<Variable> Variables { get; private set; }
+        public IList<Variable> Variables { get; }
 
         #region ISnmpData Members
         /// <summary>
         /// Type code.
         /// </summary>
-        public SnmpType TypeCode
-        {
-            get { return SnmpType.GetRequestPdu; }
-        }
+        public SnmpType TypeCode => SnmpType.GetRequestPdu;
 
         /// <summary>
         /// Appends the bytes to <see cref="Stream"/>.
@@ -120,17 +111,13 @@ namespace Lextm.SharpSnmpLib
             {
                 throw new ArgumentNullException(nameof(stream));
             }
-            
-            if (_raw == null)
-            {
-                _raw = ByteTool.ParseItems(RequestId, ErrorStatus, ErrorIndex, _varbindSection);
-            }
 
+            _raw ??= ByteTool.ParseItems(RequestId, ErrorStatus, ErrorIndex, _varbindSection);
             stream.AppendBytes(TypeCode, _length, _raw);
         }
 
         #endregion
-        
+
         /// <summary>
         /// Returns a <see cref="string"/> that represents this <see cref="GetRequestPdu"/>.
         /// </summary>
@@ -140,9 +127,9 @@ namespace Lextm.SharpSnmpLib
             return string.Format(
                 CultureInfo.InvariantCulture,
                 "GET request PDU: seq: {0}; status: {1}; index: {2}; variable count: {3}",
-                RequestId, 
-                ErrorStatus, 
-                ErrorIndex, 
+                RequestId,
+                ErrorStatus,
+                ErrorIndex,
                 Variables.Count.ToString(CultureInfo.InvariantCulture));
         }
     }

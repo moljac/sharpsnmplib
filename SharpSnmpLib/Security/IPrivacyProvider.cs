@@ -17,7 +17,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System;
 using System.Collections.Generic;
 
 namespace Lextm.SharpSnmpLib.Security
@@ -48,7 +47,7 @@ namespace Lextm.SharpSnmpLib.Security
         /// <param name="parameters">The parameters.</param>
         /// <returns></returns>
         ISnmpData Decrypt(ISnmpData data, SecurityParameters parameters);
-        
+
         /// <summary>
         /// Corresponding <see cref="IAuthenticationProvider"/>.
         /// </summary>
@@ -58,7 +57,7 @@ namespace Lextm.SharpSnmpLib.Security
         /// Engine IDs.
         /// </summary>
         /// <remarks>This is an optional field, and only used by TRAP v2 authentication.</remarks>
-        ICollection<OctetString> EngineIds { get; }
+        ICollection<OctetString>? EngineIds { get; }
 
         /// <summary>
         /// Passwords to key.

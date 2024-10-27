@@ -40,8 +40,8 @@ namespace Lextm.SharpSnmpLib.Messaging
     public sealed class TrapV1Message : ISnmpMessage
     {
         private readonly ISnmpPdu _pdu;
-        private readonly Sequence _container;
-        private Scope _scope;
+        private readonly Sequence? _container;
+        private Scope? _scope;
 
         /// <summary>
         /// Creates a <see cref="TrapV1Message"/> with all content.
@@ -61,31 +61,16 @@ namespace Lextm.SharpSnmpLib.Messaging
             {
                 throw new ArgumentNullException(nameof(variables));
             }
-            
-            if (enterprise == null)
-            {
-                throw new ArgumentNullException(nameof(enterprise));
-            }
-            
-            if (community == null)
-            {
-                throw new ArgumentNullException(nameof(community));
-            }
-            
-            if (agent == null)
-            {
-                throw new ArgumentNullException(nameof(agent));
-            }
-            
+
             if (version != VersionCode.V1)
             {
                 throw new ArgumentException($"TRAP v1 is not supported in this SNMP version: {version}", nameof(version));
             }
-            
+
             Version = version;
-            AgentAddress = agent;
-            Community = community;
-            Enterprise = enterprise;
+            AgentAddress = agent ?? throw new ArgumentNullException(nameof(agent));
+            Community = community ?? throw new ArgumentNullException(nameof(community));
+            Enterprise = enterprise ?? throw new ArgumentNullException(nameof(enterprise));
             Generic = generic;
             Specific = specific;
             TimeStamp = time;
@@ -99,7 +84,7 @@ namespace Lextm.SharpSnmpLib.Messaging
             _pdu = pdu;
             Parameters = SecurityParameters.Create(Community);
         }
-        
+
         /// <summary>
         /// Creates a <see cref="TrapV1Message"/> instance with a message body.
         /// </summary>
@@ -110,21 +95,21 @@ namespace Lextm.SharpSnmpLib.Messaging
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            
+
             if (body.Length != 3)
             {
                 throw new ArgumentException("Invalid message body.", nameof(body));
             }
-            
+
             Community = (OctetString)body[1];
             Version = (VersionCode)((Integer32)body[0]).ToInt32();
-            
+
             // IMPORTANT: comment this check out if you need to support 
             if (Version != VersionCode.V1)
             {
                 throw new ArgumentException($"TRAP v1 is not supported in this SNMP version: {Version}.", nameof(body));
             }
-                        
+
             _pdu = (ISnmpPdu)body[2];
             if (_pdu.TypeCode != SnmpType.TrapV1Pdu)
             {
@@ -144,54 +129,48 @@ namespace Lextm.SharpSnmpLib.Messaging
         /// <summary>
         /// Time stamp.
         /// </summary>
-        [CLSCompliant(false), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "TimeStamp")]
-        public uint TimeStamp { get; private set; }
+        [CLSCompliant(false)]
+        public uint TimeStamp { get; }
 
         /// <summary>
         /// Community name.
         /// </summary>
-        public OctetString Community { get; private set; }
+        public OctetString Community { get; }
 
         /// <summary>
         /// Enterprise.
         /// </summary>
-        public ObjectIdentifier Enterprise { get; private set; }
+        public ObjectIdentifier Enterprise { get; }
 
         /// <summary>
         /// Agent address.
         /// </summary>
-        public IPAddress AgentAddress { get; private set; }
+        public IPAddress AgentAddress { get; }
 
         /// <summary>
         /// Generic type.
         /// </summary>
-        public GenericCode Generic { get; private set; }
+        public GenericCode Generic { get; }
 
         /// <summary>
         /// Specific type.
         /// </summary>
-        public int Specific { get; private set; }
+        public int Specific { get; }
 
         /// <summary>
         /// Protocol version.
         /// </summary>
-        public VersionCode Version { get; private set; }
+        public VersionCode Version { get; }
 
         /// <summary>
         /// Gets the header.
         /// </summary>
-        public Header Header 
-        { 
-            get { throw new NotSupportedException(); }
-        }
-        
+        public Header Header => throw new NotSupportedException();
+
         /// <summary>
         /// Gets the privacy provider.
         /// </summary>
-        public IPrivacyProvider Privacy
-        {
-            get { throw new NotSupportedException(); }
-        }
+        public IPrivacyProvider Privacy => throw new NotSupportedException();
 
         /// <summary>
         /// To byte format.
@@ -207,7 +186,7 @@ namespace Lextm.SharpSnmpLib.Messaging
         /// </summary>
         /// <value>The parameters.</value>
         /// <remarks><see cref="TrapV1Message"/> returns null here.</remarks>
-        public SecurityParameters Parameters { get; private set; }
+        public SecurityParameters Parameters { get; }
 
         /// <summary>
         /// Gets the scope.
@@ -216,9 +195,9 @@ namespace Lextm.SharpSnmpLib.Messaging
         /// <remarks><see cref="TrapV1Message"/> returns null here.</remarks>
         public Scope Scope
         {
-            get { return _scope ?? (_scope = new Scope(_pdu)); }
+            get { return _scope ??= new Scope(_pdu); }
         }
-        
+
         /// <summary>
         /// Returns a <see cref="string"/> that represents the current <see cref="TrapV1Message"/>.
         /// </summary>
@@ -252,7 +231,7 @@ namespace Lextm.SharpSnmpLib.Messaging
             {
                 throw new ArgumentNullException(nameof(data));
             }
-            
+
             var collection = new List<ISnmpData>(1 + data.Length) { new Integer32((int)version) };
             collection.AddRange(data);
             return new Sequence(collection);
